@@ -1,6 +1,6 @@
 import smtplib
 from typing import Optional, Tuple
-from audit.config import SmtpConfig
+from client.config import SmtpConfig
 
 class SmtpClient:
     # Constructor with SmtpConfig injected
@@ -36,7 +36,7 @@ class SmtpClient:
             raise RuntimeError("[-] Not connected to SMTP server.")
     
     # Banner retrieval
-    def grabBanner(self) -> Tuple[int, str]:
+    def smtpGrabBanner(self) -> Tuple[int, str]:
         self.ensureConnected()
         if self._lastBanner is None:
             raise RuntimeError("[!] Connection established, no banner received.")
