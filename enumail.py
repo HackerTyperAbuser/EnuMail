@@ -1,5 +1,4 @@
-import argparse
-import sys 
+import argparse 
 
 from services.BannerGrabber import BannerGrabber
 from client.config import ImapConfig, Pop3Config, SmtpConfig
@@ -15,25 +14,42 @@ def buildParser() -> argparse.ArgumentParser:
             ),
             formatter_class=argparse.RawDescriptionHelpFormatter)
     
-    parser.add_argument("service", help="Service to target (SMTP, POP3, IMAP)")
-    parser.add_argument("host", help="Mail server host (IP or domain)")
-    parser.add_argument("-p", "--port", type=int, help="Port number of service")
-    parser.add_argument("-e", "--timeout", type=float, default=10.0, help="Timeout duration (default: 10)")
-    parser.add_argument("-s", "--tls", action="store_true", help="Attempt TLS/SSL connection")
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("host", help="Mail server host (IP or domain)")
+    common.add_argument("-p", "--port", type=int, help="Port number of service")
+    common.add_argument("-e", "--timeout", type=float, default=10.0, help="Timeout duration (default: 10)")
+    common.add_argument("-s", "--tls", action="store_true", help="Attempt TLS/SSL connection")
+
+    subparsers = parser.add_subparsers(dest="service", require=True, help="Service to target (SMTP, POP3, IMAP)")
+
+    # SMTP Flags
+    smtpParser = subparsers.add_parser("smtp", parent=[common], help="Target SMTP service")
+    smtpParser.set_defaults(default_port=25)
+    smtpParser.add_argument("-c", "--create", action="store_true", help="Create and send a test email (SMTP)")
+
     return parser
 
 def main():
     args = buildParser().parse_args()
     service = args.service.lower()
+    port = args.port
 
     if service == "smtp":
+        if port is None:
+            port = 587 if args.tls else args.default_port
         cfg = SmtpConfig(
             host=args.host,
-            port=args.port or 25,
+            port=port,
             timeout=args.timeout,
             useTls=args.tls
         )
         print("[*] SMTP config: {cfg}")
+
+        if args.create:
+            print("[!] Create email mode")
+            grabberService.createmail()
+            return 0
+        
     elif service == "pop3":
         cfg = Pop3Config(
             host=args.host,

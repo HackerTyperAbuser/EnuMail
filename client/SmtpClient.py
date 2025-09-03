@@ -1,5 +1,7 @@
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import smtplib
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from client.config import SmtpConfig
 
 class SmtpClient:
@@ -34,6 +36,7 @@ class SmtpClient:
     def ensureConnected(self):
         if not self._connected or not self._server:
             raise RuntimeError("[-] Not connected to SMTP server.")
+        print("[+] SMTP server connected")
     
     # Banner retrieval
     def smtpGrabBanner(self) -> Tuple[int, str]:
@@ -50,5 +53,33 @@ class SmtpClient:
         if code != 250:
             code, response = self._server.helo()
         return code, response.decode(errors="replace").strip()
+    
+    def sendConstructMail(self, sender:str, recipients: List[str] | str, subject: str, body: str, username: Optional[str] = None, password: Optional[str] = None) -> bool:
+        self.ensureConnected()
+
+        """
+        Build and send a simple plaintext email.
+        - sender: "alice@example.com"
+        - recipients: ["bob@example.com", "charlie@example.com"]
+        - subject: "Hello"
+        - body: "This is a test"
+        - username/password: for servers requiring authentication
+        """
+
+        if isinstance(recipients, str):
+            recipients = [recipients]
+
+        msg = MIMEMultipart()
+        msg["From"] = sender
+        msg["To"] = ", ".join(recipients)
+        msg["Subject"]  = subject
+        msg.attach(MIMEText(body, "plain"))
+
+        if username and password:
+            self._server.login(username, password)
+        
+        self._server.sendmail(sender, recipients, msg.as_string())
+        return True
+        
 
 
