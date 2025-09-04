@@ -15,7 +15,20 @@ class SmtpClient:
     # Called when SmtpClient(cfg) is called when entering the with block
     def __enter__(self) -> "SmtpClient":
         self._server = smtplib.SMTP(timeout=self._cfg.timeout)
-        code, banner = self._server.connect(self._cfg.host, self._cfg.port) # Opens TCP socket
+        # Connect SMTP server with configuration
+        code, banner = self._server.connect(self._cfg.host, self._cfg.port) 
+
+        # Encrypted traffic upgrade after first plaintext connection
+        try:
+            if self._cfg.useTls:
+                print("[*] Attempting to upgrade to TLS using STARTTLS")
+                self._server.starttls()
+                print("[+] STARTTLS handshake successful")
+        except smtplib.SMTPException as e:
+            print(f"[-] STARTTLS failed: {e}")
+            self._server.quit()
+            raise
+
         self._connected = True
         self._lastBanner = (code, banner)
         return self
@@ -81,8 +94,56 @@ class SmtpClient:
             self._server.sendmail(sender, recipients, msg.as_string())
         except Exception:
             return False
-        
         return True
+
+    # Check VRFY Command SMTP
+    def isVrfyAvailable(self) -> Tuple[bool, int, str]:
+        self.ensureConnected()
+        try:
+            code, msg = self._server.verify("root")
+            msg_str = msg.decode(errors="replace") if isinstance(msg, bytes) else str(msg)
+            return True, code, msg_str.strip()
+        except smtplib.SMTPNotSupportedError:
+            return False, 500, "VRFY command not supported"
+        except smtplib.SMTPResponseException as e:
+            return True, e.smtp_code, e.smtp_error.decode(errors="replace")
+        except Exception as e:
+            return False, 500, f"Error: {e}"
+
+    # Check SMTP different responses
+    def isVrfyBruteForceable(self, usernames: list[str]) -> Tuple[bool, dict]:
+        self.ensureConnected()
+        responses = {}
+        for user in usernames:
+            try:
+                code, msg = self._server.verify(user)
+                msg_str = msg.decode(errors="replace") if isinstance(msg, bytes) else str(msg)
+            except smtplib.SMTPResponseException as e:
+                code, msg_str = e.smtp_code, e.smtp_error.decode(errors="replace")
+            except Exception as e:
+                code, msg_str = 0, f"Error: {e}"
+            
+            responses[user] = (code, msg_str.strip())
         
+        unique_values = set(responses.values())
+        is_enum_possible = len(unique_values) > 1
+        return is_enum_possible, responses
+
+    # Attempt VRFY brute forcing
+    def vrfyBruteForce(self, usernames: list[str]) -> list[Tuple[str, int, str]]:
+        self.ensureConnected()
+        valid_users = []
+        for user in usernames:
+            try:
+                code, msg = self._server.verify(user)
+                msg_str = msg.decode(errors="replace") if isinstance(msg, bytes) else str(msg)
+            except smtplib.SMTPResponseException as e:
+                code, msg_str = e.smtp_code, e.smtp_error.decode(errors="replace")
+            except Exception as e:
+                continue  # skip on unexpected error
+            if code in [250, 252]:
+                valid_users.append((user, code, msg_str.strip()))
+        return valid_users
+    
 
 

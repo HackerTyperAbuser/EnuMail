@@ -27,7 +27,12 @@ def buildParser() -> argparse.ArgumentParser:
     # ----------------------------------------------------------------------------------------------------------------
     smtpParser = subparsers.add_parser("smtp", parents=[common], help="Target SMTP service")
     smtpParser.set_defaults(default_port=25)
+
+    # CREATE SMTP EMAIL 
     smtpParser.add_argument("-c", "--create", action="store_true", help="Create and send a test email (SMTP)")
+
+    # VRFY BRUTE FORCE 
+    smtpParser.add_argument("-w", "--wordlist", help="VRFY username bruteforce")
 
     # ----------------------------------------------------------------------------------------------------------------
     #                                                 POP3 PARSER
@@ -60,6 +65,11 @@ def main():
             useTls=args.tls
         )
         print("[*] SMTP config: {cfg}")
+        if args.wordlist:
+            print("[!] VRFY Brute Force Mode")
+            grabberService.smtpBrute(args.wordlist)
+            print("[!] Brute force complete")
+            return 0
 
         if args.create:
             print("[!] Create email mode")

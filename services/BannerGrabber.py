@@ -1,9 +1,6 @@
 from client import ImapClient, Pop3Client
-from client.config import ImapBannerInfo, Pop3BannerInfo, SmtpBannerInfo, SmtpConfig 
+from client.config import ImapBannerInfo, Pop3BannerInfo, SmtpBannerInfo
 from client.SmtpClient import SmtpClient
-
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 class BannerGrabber:
     def __init__(self, cfg, service: str):
@@ -65,3 +62,30 @@ class BannerGrabber:
                 print("[+] Message sent!")
             else:
                 print("[-] Unable to send message")
+
+    def smtpBrute(self, usernames: list[str]):
+        with SmtpClient(self._cfg) as client:
+            ok, code, msg = client.isVrfyAvailable()
+            if not ok:
+                print(f"[-] VRFY command not available")
+                return 1
+            else:
+                print(f"[+] VRF command available, checking responses")
+                
+            testUsers = ["root", "admin", "user", "invalid"]
+            is_enum_possible, responses = client.isVrfyBruteForceable(testUsers)
+
+            if is_enum_possible:
+                print("[!] Server returns different responses, attempting brute force")
+            else:
+                print("[-] Responses looks similar, username enumeration may not be possible.")
+                return 1
+            
+            print("[*] Attempting brute force...")
+            validUsers = client.vrfyBruteForce(usernames)
+            for user, code, msg in validUsers:
+                print(f"[+] Found user: {user} ({code} {msg})")
+            return 0
+
+
+            
