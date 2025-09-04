@@ -13,7 +13,8 @@ class BannerGrabber:
     def bannerGrab(self):
         if self._service == "smtp":
             with SmtpClient(self._cfg) as client:
-                code, banner = client.grabBanner()
+                print("[+] SMTP server connected")
+                code, banner = client.smtpGrabBanner()
                 usedTls = False
 
                 ehloCode, ehloText = client.ehloOrHelo()

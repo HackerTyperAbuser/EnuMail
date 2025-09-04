@@ -21,7 +21,7 @@ class SmtpClient:
         return self
     
     # Called when exiting the with block
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         try:
             if self._server:
                 self._server.quit()
@@ -36,7 +36,6 @@ class SmtpClient:
     def ensureConnected(self):
         if not self._connected or not self._server:
             raise RuntimeError("[-] Not connected to SMTP server.")
-        print("[+] SMTP server connected")
     
     # Banner retrieval
     def smtpGrabBanner(self) -> Tuple[int, str]:
@@ -78,7 +77,11 @@ class SmtpClient:
         if username and password:
             self._server.login(username, password)
         
-        self._server.sendmail(sender, recipients, msg.as_string())
+        try:
+            self._server.sendmail(sender, recipients, msg.as_string())
+        except Exception:
+            return False
+        
         return True
         
 

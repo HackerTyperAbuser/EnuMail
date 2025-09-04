@@ -11,3 +11,10 @@ Email service enumeration tool set, allow for enumeration of SMTP, POP3 and IMAP
 - Email Spoofing via SMTP open relays.
 - User enumeration for SMTP service.
 - Account brute forcing for POP3 and IMAP service.
+
+## Tool test
+Run a local email docker container
+```bash
+docker build -t simple-mailserver mailserver
+docker run -d --name my-mailserver -p 25:25 -p 110:110 -p 143:143 simple-mailserver  
+```

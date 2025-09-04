@@ -16,7 +16,7 @@ class Pop3Client:
         self._connected = True
         return self
     
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         try:
             if self._server:
                 self._server.quit()
