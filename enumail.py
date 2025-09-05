@@ -37,9 +37,10 @@ def buildParser() -> argparse.ArgumentParser:
     # ----------------------------------------------------------------------------------------------------------------
     #                                                 POP3 PARSER
     # ----------------------------------------------------------------------------------------------------------------
-    # pop3Parser = subparsers.add_parser("smtp", parents=[common], help="Target Pop3 service")
-    # pop3Parser.set_defaults(default_port=25)
-    # pop3Parser.add_argument("-d", "--dump", action="store_true", help="Read stored emails on Pop3")
+    pop3Parser = subparsers.add_parser("smtp", parents=[common], help="Target Pop3 service")
+    pop3Parser.set_defaults(default_port=25)
+    pop3Parser.add_argument("-u", "--username", type=str, help="Pop3 Username")
+    pop3Parser.add_argument("--password", type=str, help="Pop3 Password")
 
     # ----------------------------------------------------------------------------------------------------------------
     #                                                 IMAP PARSER
@@ -84,6 +85,12 @@ def main():
             useTls=args.tls
         )
         print("[*] POP3 config: {cfg}")
+
+        if args.username and args.password:
+            print(f"[!] Attempting to authenticate to POP3 with credentials {args.username}:{args.password}")
+            grabberService.loginPop3()
+            print("[+] Dump complete.")
+            return 0
     elif service == "imap":
         cfg = ImapConfig(
             host=args.host,

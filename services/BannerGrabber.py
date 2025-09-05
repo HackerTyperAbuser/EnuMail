@@ -86,6 +86,22 @@ class BannerGrabber:
             for user, code, msg in validUsers:
                 print(f"[+] Found user: {user} ({code} {msg})")
             return 0
+    
+    def loginPop3(self, username: str, password: str):
+        with Pop3Client(self._cfg) as client:
+            # Return login success true false
+            success = client.authenPop3(username, password)
+
+            if success:
+                print(f"[+] Logged in to POP3 with credential {username}:{password}")
+                print("[*] Attempting email dump...")
+                messsages = client.listMessages()
+                for message in messsages:
+                    print(f"{message['index']}: From {message['from']} | Subject: {message['subject']} | Date: {message['date']}")
+                    return 0
+
+            print("[-] Pop3 Authentication Failed")
+            return 1
 
 
             
